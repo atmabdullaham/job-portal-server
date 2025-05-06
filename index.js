@@ -33,6 +33,7 @@ async function run() {
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
    
     const jobsCollection = client.db("jobPortal").collection("jobs");
+    const jobApplicationsCollection = client.db("jobPortal").collection("job-applications")
     
     app.get('/jobs', async(req, res)=>{
         const cursor = jobsCollection.find()
@@ -46,7 +47,21 @@ async function run() {
     const result = await jobsCollection.findOne(query)
     res.send(result)
    })
+// get some jobs by email, this is for the employer to see the applications
+app.get('/job-applications', async(req,res)=>{
+    const email = req.query.email
+    const query = {applicant_email: email}
+    const result = await jobApplicationsCollection.find(query).toArray()
+    res.send(result)
+})
 
+//job application apis
+app.post('/job-applications', async(req, res)=>{
+    const application = req.body
+    const result = await jobApplicationsCollection.insertOne(application)
+    res.send(result)
+})
+    
   } finally {
     // Ensures that the client will close when you finish/error
     // await client.close();
