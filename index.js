@@ -47,11 +47,34 @@ async function run() {
     const result = await jobsCollection.findOne(query)
     res.send(result)
    })
+ //Delete job application
+ app.delete(`/job-applications/:id`, async(req, res)=>{
+    const id = req.params.id;
+    const query = {_id: new ObjectId(id)}
+    const result = await jobApplicationsCollection.deleteOne(query)
+    res.send(result)
+ })
+
 // get some jobs by email, this is for the employer to see the applications
 app.get('/job-applications', async(req,res)=>{
     const email = req.query.email
     const query = {applicant_email: email}
     const result = await jobApplicationsCollection.find(query).toArray()
+
+    //fokira system,
+    for(const application of result){
+        // console.log(application.job_id)
+        const query1 = { _id: new ObjectId(application.job_id)}
+        const job = await jobsCollection.findOne(query1)
+        if(job){
+            application.title = job.title;
+            application.company = job.company;
+            application.location = job.location;
+            application.logo = job.company_logo;
+            application.jobType = job.jobType;
+            application.category= job.category;
+        }
+    }
     res.send(result)
 })
 
