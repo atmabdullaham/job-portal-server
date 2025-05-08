@@ -11,11 +11,27 @@ const port = process.env.PORT || 5000;
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 
 app.use(cors({
-    origin: ['http://localhost:5173/'],
+    origin: ['http://localhost:5173'],
     credentials: true
 }));
 app.use(express.json());
 app.use(cookieParser());
+
+
+const verifyToken = (req, res, next)=>{
+    const token = req.cookies?.token;
+    if(!token){
+        return res.status(401).send({message: 'Unauthorized access'})
+    }
+    jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
+        if(err){
+            return res.status(401).send({message:'UnAuthorized Access'})
+        }
+        req.user = decoded;
+        next()
+    })
+    
+}
 
 
 
@@ -99,9 +115,14 @@ app.post('/jwt', async(req, res)=>{
 
 
 // get some jobs by email, this is for the employer to see the applications
-app.get('/job-applications', async(req,res)=>{
+app.get('/job-applications',verifyToken, async(req,res)=>{
     const email = req.query.email
     const query = {applicant_email: email}
+  
+
+    if(req.user.user.email !== req.query.email){
+        return res.status(403).send({message: 'forbidden access'})
+    }
 
     console.log(req.cookies)
     
