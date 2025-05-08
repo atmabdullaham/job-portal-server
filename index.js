@@ -36,7 +36,13 @@ async function run() {
     const jobApplicationsCollection = client.db("jobPortal").collection("job-applications")
     
     app.get('/jobs', async(req, res)=>{
-        const cursor = jobsCollection.find()
+        const email = req.query.email;
+        let query = {}
+        if(email){
+           query = {hr_email: email}
+        }
+
+        const cursor = jobsCollection.find(query)
         const result = await cursor.toArray()
         res.send(result)
     })
@@ -47,6 +53,17 @@ async function run() {
     const result = await jobsCollection.findOne(query)
     res.send(result)
    })
+
+ //Jobs related apis
+ app.post('/jobs', async(req, res)=>{
+    const newJob = req.body;
+    const result = await jobsCollection.insertOne(newJob)
+    res.send(result)
+ })
+
+
+
+
  //Delete job application
  app.delete(`/job-applications/:id`, async(req, res)=>{
     const id = req.params.id;
@@ -54,6 +71,8 @@ async function run() {
     const result = await jobApplicationsCollection.deleteOne(query)
     res.send(result)
  })
+
+
 
 // get some jobs by email, this is for the employer to see the applications
 app.get('/job-applications', async(req,res)=>{
@@ -78,10 +97,40 @@ app.get('/job-applications', async(req,res)=>{
     res.send(result)
 })
 
+app.get('/job-applications/jobs/:job_id', async(req, res)=>{
+    const jobId = req.params.job_id;
+    const query = {job_id: jobId};
+    const result = await jobApplicationsCollection.find(query).toArray()
+    res.send(result)
+})
+
 //job application apis
 app.post('/job-applications', async(req, res)=>{
     const application = req.body
     const result = await jobApplicationsCollection.insertOne(application)
+console.log(application)
+
+    // Not the best way (use aggregate)
+    const id = application.job_id;
+    const query = {_id: new ObjectId(id)}
+    const job = await jobsCollection.findOne(query)
+    console.log(job)
+    let newCount = 0
+    if(job.applicationCount){
+        newCount = job.applicationCount + 1
+    }else{
+        newCount = 1
+    }
+
+    // now updata the job info...
+    const filter = {_id: new ObjectId(id)};
+    const updatedDoc = {
+        $set:{
+            applicationCount: newCount
+        }
+    }
+    const updateResult = await jobsCollection.updateOne(filter,updatedDoc)
+
     res.send(result)
 })
     
