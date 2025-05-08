@@ -89,6 +89,15 @@ app.post('/jwt', async(req, res)=>{
         }
     )
     .send({success: true})
+});
+
+
+app.post ('/logout', (req, res)=>{
+    res.clearCookie('token', {
+        httpOnly: true,
+        secure: false
+    })
+    .send({success: true})
 })
 
 
